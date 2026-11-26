@@ -1,0 +1,57 @@
+name: bookstore
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"            # optional: lets host tools (psql, DBeaver, Django on host) connect
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # minio:
+  #   image: ${MINIO_IMAGE:?Set MINIO_IMAGE in .env}
+  #   command: server /data --console-address ":9001"
+  #   environment:
+  #     MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+  #     MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+  #   volumes:
+  #     - minio-data:/data
+  #   ports:
+  #     - "9000:9000"            # S3 API (Django + browser)
+  #     - "9001:9001"            # web console
+  #   healthcheck:
+  #     test: ["CMD", "mc", "ready", "local"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 10
+
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py runserver 0.0.0.0:8000"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      S3_ENDPOINT_URL: http://minio:9000
+    volumes:
+      - .:/app                 # live code reload
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  minio-data:
