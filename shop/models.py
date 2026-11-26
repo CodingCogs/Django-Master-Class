@@ -45,6 +45,9 @@ class Order(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status"], name="order_status_idx"),
+            ]
 
     def __str__(self):
         # Touches self.customer -> causes N+1 when listing orders without
