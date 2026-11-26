@@ -77,7 +77,7 @@ class Book(models.Model):
     )
     authors = models.ManyToManyField(Author, related_name="books")
     tags = models.ManyToManyField(Tag, related_name="books", blank=True)
-
+    cover = models.ImageField(upload_to="covers/%Y/%m/", blank=True)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     # Cost price: lets you compute margins with F() expressions.
     cost = models.DecimalField(max_digits=8, decimal_places=2)
